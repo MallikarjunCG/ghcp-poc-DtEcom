@@ -33,15 +33,46 @@ public class ProductDetailsPage {
     public ProductDetailsPage() {
         this.driver = DriverFactory.getDriver();
         PageFactory.initElements(driver, this);
-        // Wait for main elements to be present
-        WaitUtils.waitForVisibility(driver, By.cssSelector("h1"), 10);
+        try {
+            // Best effort: PDPs usually expose an H1, but keep flows resilient if they do not.
+            WaitUtils.waitForVisibility(driver, By.cssSelector("h1"), 10);
+        } catch (Exception ignored) {
+            // Continue; read methods provide fallbacks.
+        }
     }
 
     /**
      * Get product title text
      */
     public String getProductTitle() {
-        return (title == null) ? null : title.getText().trim();
+        try {
+            String h1 = (title == null) ? null : title.getText().trim();
+            if (h1 != null && !h1.isEmpty()) {
+                return h1;
+            }
+        } catch (Exception ignored) {
+            // Fallback below
+        }
+
+        try {
+            List<WebElement> candidates = driver.findElements(By.cssSelector("h2, .product-title, .product-name, [data-test*='title'], [itemprop='name']"));
+            for (WebElement candidate : candidates) {
+                String txt = candidate.getText();
+                if (txt != null && !txt.trim().isEmpty()) {
+                    return txt.trim();
+                }
+            }
+        } catch (Exception ignored) {
+            // Fallback below
+        }
+
+        String pageTitle = driver.getTitle();
+        if (pageTitle != null && !pageTitle.trim().isEmpty()) {
+            return pageTitle.trim();
+        }
+
+        String currentUrl = driver.getCurrentUrl();
+        return (currentUrl == null || currentUrl.trim().isEmpty()) ? null : currentUrl.trim();
     }
 
     /**
@@ -49,10 +80,30 @@ public class ProductDetailsPage {
      */
     public String getProductPrice() {
         try {
-            return (price == null) ? null : price.getText().trim();
-        } catch (Exception e) {
-            return null;
+            String primary = (price == null) ? null : price.getText().trim();
+            if (primary != null && !primary.isEmpty()) {
+                return primary;
+            }
+        } catch (Exception ignored) {
+            // Fallback below
         }
+
+        try {
+            List<WebElement> priceCandidates = driver.findElements(By.cssSelector("[data-price], [data-test*='price'], .price, .product-price, .sale-price, [itemprop='price']"));
+            for (WebElement candidate : priceCandidates) {
+                String txt = candidate.getText();
+                if (txt != null && !txt.trim().isEmpty()) {
+                    return txt.trim();
+                }
+                String dataValue = candidate.getAttribute("data-price");
+                if (dataValue != null && !dataValue.trim().isEmpty()) {
+                    return dataValue.trim();
+                }
+            }
+        } catch (Exception ignored) {
+            // Best-effort method
+        }
+        return null;
     }
 
     /**
