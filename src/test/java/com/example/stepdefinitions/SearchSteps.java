@@ -54,7 +54,7 @@ public class SearchSteps {
             String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
             DriverFactory.getDriver().get(base + "/tires");
         }
-        int count = searchResultsPage.waitForResultsAndGetCount(25);
+        int count = searchResultsPage.waitForResultsAndGetCount(5);
         ScenarioState.setResultsAvailable(count > 0 || DriverFactory.getDriver().getCurrentUrl().contains("/tires"));
         pauseForDemo();
     }
@@ -69,7 +69,7 @@ public class SearchSteps {
             String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
             DriverFactory.getDriver().get(base + "/tires");
         }
-        int count = searchResultsPage.waitForResultsAndGetCount(25);
+        int count = searchResultsPage.waitForResultsAndGetCount(5);
         ScenarioState.setResultsAvailable(count > 0 || DriverFactory.getDriver().getCurrentUrl().contains("/tires"));
         pauseForDemo();
     }
@@ -86,12 +86,13 @@ public class SearchSteps {
     }
 
     private void pauseForDemo() {
-        String rawDelay = System.getProperty("demo.step.delay.ms", "1200");
+        // Keep demo pausing opt-in so automated runs stay fast by default.
+        String rawDelay = System.getProperty("demo.step.delay.ms", "0");
         long delayMs;
         try {
             delayMs = Long.parseLong(rawDelay);
         } catch (NumberFormatException ignored) {
-            delayMs = 1200L;
+            delayMs = 0L;
         }
         if (delayMs <= 0) {
             return;

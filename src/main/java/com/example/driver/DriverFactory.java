@@ -2,6 +2,7 @@ package com.example.driver;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
@@ -31,16 +32,22 @@ public class DriverFactory {
         } catch (Exception ignored) {
             // In headless mode maximize may be ignored by the driver.
         }
-        wd.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        // Rely on explicit waits in page objects; implicit waits can multiply total timeout cost.
+        wd.manage().timeouts().implicitlyWait(Duration.ZERO);
         driver.set(wd);
     }
 
     private static ChromeOptions buildOptions(boolean headless) {
         ChromeOptions options = new ChromeOptions();
+        boolean fastMode = Boolean.parseBoolean(System.getProperty("run.fast", "false"));
 
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("profile.default_content_setting_values.notifications", 2);
         prefs.put("profile.default_content_setting_values.geolocation", 2);
+        if (fastMode) {
+            // Optional speed-up for local smoke runs where image rendering is not required.
+            prefs.put("profile.managed_default_content_settings.images", 2);
+        }
         options.setExperimentalOption("prefs", prefs);
 
         options.addArguments("--disable-infobars");
@@ -50,6 +57,11 @@ public class DriverFactory {
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--no-sandbox");
         options.addArguments("--window-size=1920,1080");
+        if (fastMode) {
+            options.addArguments("--disable-gpu");
+            options.addArguments("--blink-settings=imagesEnabled=false");
+        }
+        options.setPageLoadStrategy(PageLoadStrategy.EAGER);
         if (headless) {
             options.addArguments("--headless=new");
         }

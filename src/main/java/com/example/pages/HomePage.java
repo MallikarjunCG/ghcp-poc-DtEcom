@@ -8,10 +8,6 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
 import java.util.List;
 
 /**
@@ -41,7 +37,7 @@ public class HomePage {
     public void openHomePage(String url) {
         driver.get(url);
         // wait for main navigation or search to be visible
-        WaitUtils.waitForVisibility(driver, By.cssSelector("input[type='search'], a[href*='/tires']"), 15);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("input[type='search'], a[href*='/tires']"), 8);
         handleLocationPopup();
         dismissTopOverlays();
     }
@@ -52,10 +48,10 @@ public class HomePage {
     public void navigateToTires() {
         dismissTopOverlays();
 
-        if (tryClick(By.cssSelector("a[href='/tires'], a[href*='/tires'], a[data-testid*='tires']"), 10)) {
+        if (tryClick(By.cssSelector("a[href='/tires'], a[href*='/tires'], a[data-testid*='tires']"), 4)) {
             return;
         }
-        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'TIRES', 'tires'), 'tires')]"), 8)) {
+        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'TIRES', 'tires'), 'tires')]"), 3)) {
             return;
         }
 
@@ -63,7 +59,7 @@ public class HomePage {
         String current = driver.getCurrentUrl();
         String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
         driver.get(base + "/tires");
-        WaitUtils.waitForVisibility(driver, By.cssSelector("a[href*='vehicle'], a[href*='size'], button, h1"), 15);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("a[href*='vehicle'], a[href*='size'], button, h1"), 8);
     }
 
     private boolean tryClick(By locator, int timeoutSeconds) {
@@ -133,16 +129,9 @@ public class HomePage {
                 By.cssSelector("button[aria-label*='close' i], button[class*='close' i], [data-testid*='close' i]")
         };
 
-        for (int attempt = 0; attempt < 3; attempt++) {
-            for (By locator : closeCandidates) {
-                if (tryDismiss(locator)) {
-                    return;
-                }
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        // Fast best-effort popup cleanup: avoid long waits when no modal is present.
+        for (By locator : closeCandidates) {
+            if (tryDismiss(locator)) {
                 return;
             }
         }
@@ -150,20 +139,22 @@ public class HomePage {
 
     private boolean tryDismiss(By locator) {
         try {
-            WebDriverWait wait = new WebDriverWait(DriverFactory.getDriver(), Duration.ofSeconds(2));
-            WebElement button = wait.until(ExpectedConditions.elementToBeClickable(locator));
-            button.click();
-            return true;
-        } catch (Exception clickFailure) {
-            try {
-                List<WebElement> candidates = driver.findElements(locator);
-                if (!candidates.isEmpty()) {
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", candidates.get(0));
+            List<WebElement> candidates = driver.findElements(locator);
+            for (WebElement candidate : candidates) {
+                if (!candidate.isDisplayed()) {
+                    continue;
+                }
+                try {
+                    candidate.click();
+                    return true;
+                } catch (Exception clickFailure) {
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", candidate);
                     return true;
                 }
-            } catch (Exception ignored) {
-                // Popup not present or not interactable for this locator.
             }
+            return false;
+        } catch (Exception ignored) {
+            // Popup not present or not interactable for this locator.
             return false;
         }
     }

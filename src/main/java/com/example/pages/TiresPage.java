@@ -30,10 +30,10 @@ public class TiresPage {
      * Navigate to Shop By Vehicle page
      */
     public void navigateToShopByVehicle() {
-        if (tryClick(By.cssSelector("a[href*='fitment/vehicle'], a[href*='vehicle']"), 8)) {
+        if (tryClick(By.cssSelector("a[href*='fitment/vehicle'], a[href*='vehicle']"), 3)) {
             return;
         }
-        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'VEHICLE', 'vehicle'), 'vehicle')]"), 6)) {
+        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'VEHICLE', 'vehicle'), 'vehicle')]"), 2)) {
             return;
         }
         openFitmentFallback("vehicle");
@@ -43,10 +43,10 @@ public class TiresPage {
      * Navigate to Shop By Size page
      */
     public void navigateToShopBySize() {
-        if (tryClick(By.cssSelector("a[href*='fitment/size'], a[href*='shop-by-size'], a[href*='size']"), 8)) {
+        if (tryClick(By.cssSelector("a[href*='fitment/size'], a[href*='shop-by-size'], a[href*='size']"), 3)) {
             return;
         }
-        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'SIZE', 'size'), 'size')]"), 6)) {
+        if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'SIZE', 'size'), 'size')]"), 2)) {
             return;
         }
         openFitmentFallback("size");
@@ -71,6 +71,7 @@ public class TiresPage {
         String current = driver.getCurrentUrl();
         String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
         driver.get(base + "/tires/best-low-cost#/fitment/" + type);
-        WaitUtils.waitForPresence(driver, By.cssSelector("select, [role='combobox'], [data-testid*='year'], [data-testid*='width']"), 15);
+        WaitUtils.waitForPresence(driver, By.cssSelector("select, [role='combobox'], [data-testid*='year'], [data-testid*='width']"), 4);
     }
 }
+

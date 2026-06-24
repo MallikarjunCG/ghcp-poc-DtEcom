@@ -67,7 +67,7 @@ public class SearchResultsPage {
                 }
             }
             // Wait for results to refresh
-            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 10);
+            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 5);
         } else {
             // Fallback: try direct filter controls before giving up.
             List<WebElement> controls = driver.findElements(By.cssSelector("input[type='checkbox'], input[type='radio'], button"));
@@ -83,7 +83,7 @@ public class SearchResultsPage {
                     } catch (Exception ignored) {
                         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", control);
                     }
-                    WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 10);
+                    WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 5);
                     return;
                 }
             }
@@ -98,7 +98,7 @@ public class SearchResultsPage {
      */
     public void applySorting(String visibleText) {
         try {
-            WaitUtils.waitForVisibility(driver, By.cssSelector("select[name*='sort'], select[id*='sort']"), 10);
+            WaitUtils.waitForVisibility(driver, By.cssSelector("select[name*='sort'], select[id*='sort']"), 2);
         } catch (Exception ignored) {
             // Continue with alternative controls below.
         }
@@ -118,7 +118,7 @@ public class SearchResultsPage {
         }
         // Wait for results to refresh
         try {
-            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result, a[href*='/buy-tires/']"), 10);
+            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result, a[href*='/buy-tires/']"), 2);
         } catch (Exception ignored) {
             // Keep flow moving for scenarios where sorting control is informational only.
         }
@@ -129,7 +129,7 @@ public class SearchResultsPage {
      */
     public ProductDetailsPage selectProductFromResults(int index) {
         try {
-            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result, a[href*='/buy-tires/']"), 10);
+            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result, a[href*='/buy-tires/']"), 3);
         } catch (Exception ignored) {
             // Continue with best-effort click strategies.
         }
@@ -160,7 +160,7 @@ public class SearchResultsPage {
      * Select product by partial title match
      */
     public ProductDetailsPage selectProductFromResults(String partialTitle) {
-        WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 10);
+        WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile, .productCard, .product, li.product-result"), 3);
         for (WebElement tile : productTiles) {
             String text = tile.getText();
             if (text != null && text.toLowerCase().contains(partialTitle.toLowerCase())) {
@@ -203,7 +203,7 @@ public class SearchResultsPage {
     public List<Double> getResultPrices() {
         List<Double> prices = new ArrayList<>();
         try {
-            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile"), 10);
+            WaitUtils.waitForPresence(driver, By.cssSelector("[data-test*='product'], .product-tile"), 5);
             for (WebElement tile : productTiles) {
                 List<WebElement> priceEls = tile.findElements(By.cssSelector(".price, .product-price, [data-test*='price']"));
                 if (!priceEls.isEmpty()) {

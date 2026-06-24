@@ -2,6 +2,7 @@ package com.example.stepdefinitions;
 
 import com.example.pages.ProductDetailsPage;
 import com.example.pages.SearchResultsPage;
+import com.example.testutils.ScenarioState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import org.testng.Assert;
@@ -25,6 +26,7 @@ public class ResultsSteps {
     @And("user selects the first product from results")
     public void user_selects_first_product() {
         ProductDetailsPage pdp = results.selectProductFromResults(0);
+        ScenarioState.setProductDetailsPage(pdp);
         // verify basic PDP loads
         String title = pdp.getProductTitle();
         String price = pdp.getProductPrice();
@@ -34,8 +36,12 @@ public class ResultsSteps {
     @Then("product details should be visible")
     public void product_details_should_be_visible() {
         // The previous step should have already navigated to PDP in most flows.
-        // Create a PDP object to read details and assert presence of at least title or price
-        ProductDetailsPage pdp = new ProductDetailsPage();
+        // Reuse PDP from previous step when available to avoid repeated page waits.
+        ProductDetailsPage pdp = ScenarioState.getProductDetailsPage();
+        if (pdp == null) {
+            pdp = new ProductDetailsPage();
+            ScenarioState.setProductDetailsPage(pdp);
+        }
         String title = pdp.getProductTitle();
         String price = pdp.getProductPrice();
         Assert.assertTrue((title != null && !title.isEmpty()) || (price != null && !price.isEmpty()), "Expected product details to be visible on PDP");

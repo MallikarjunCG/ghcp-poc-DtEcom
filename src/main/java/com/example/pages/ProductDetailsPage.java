@@ -35,7 +35,7 @@ public class ProductDetailsPage {
         PageFactory.initElements(driver, this);
         try {
             // Best effort: PDPs usually expose an H1, but keep flows resilient if they do not.
-            WaitUtils.waitForVisibility(driver, By.cssSelector("h1"), 10);
+            WaitUtils.waitForVisibility(driver, By.cssSelector("h1"), 5);
         } catch (Exception ignored) {
             // Continue; read methods provide fallbacks.
         }

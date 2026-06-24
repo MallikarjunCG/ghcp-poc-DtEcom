@@ -63,18 +63,18 @@ public class ShopByVehiclePage {
      */
     public void selectVehicleDetails(String year, String make, String model) {
         // year
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=year], select[name*=year], div[data-testid*='year']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=year], select[name*=year], div[data-testid*='year']"), 4);
         selectOption(yearSelect, year, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
         // make
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=make], select[name*=make], div[data-testid*='make']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=make], select[name*=make], div[data-testid*='make']"), 4);
         selectOption(makeSelect, make, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
         // model
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=model], select[name*=model], div[data-testid*='model']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=model], select[name*=model], div[data-testid*='model']"), 4);
         selectOption(modelSelect, model, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
 
         // submit search
         try {
-            WaitUtils.waitForClickability(driver, By.cssSelector("button[type='submit'], button[data-testid*='submit']"), 10).click();
+            WaitUtils.waitForClickability(driver, By.cssSelector("button[type='submit'], button[data-testid*='submit']"), 4).click();
         } catch (Exception e) {
             try {
                 if (findTiresButton != null) findTiresButton.click();

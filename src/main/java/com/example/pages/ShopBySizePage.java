@@ -58,17 +58,17 @@ public class ShopBySizePage {
      * Search tires by size and submit.
      */
     public void searchByTireSize(String width, String ratio, String diameter) {
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=width], select[name*=width], div[data-testid*='width']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=width], select[name*=width], div[data-testid*='width']"), 3);
         selectOption(widthSelect, width, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
 
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=ratio], select[name*=ratio], select[id*=aspect], select[name*=aspect], div[data-testid*='ratio']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=ratio], select[name*=ratio], select[id*=aspect], select[name*=aspect], div[data-testid*='ratio']"), 3);
         selectOption(ratioSelect, ratio, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
 
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=diameter], select[name*=diameter], div[data-testid*='diameter']"), 10);
+        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=diameter], select[name*=diameter], div[data-testid*='diameter']"), 3);
         selectOption(diameterSelect, diameter, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
 
         try {
-            WaitUtils.waitForClickability(driver, By.cssSelector("button[type='submit'], button[data-testid*='search']"), 10).click();
+            WaitUtils.waitForClickability(driver, By.cssSelector("button[type='submit'], button[data-testid*='search']"), 3).click();
         } catch (Exception e) {
             try {
                 if (searchButton != null) searchButton.click();
