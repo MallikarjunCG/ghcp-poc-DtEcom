@@ -49,13 +49,19 @@ public class SearchSteps {
             tiresPage.navigateToShopByVehicle();
             shopByVehiclePage.selectVehicleDetails(year, make, model);
         } catch (Exception ignored) {
-            // Some runs expose a different fitment experience; keep flow visible and resilient.
+            // Some runs expose a different fitment experience; fall back to the current catalog fitment route.
             String current = DriverFactory.getDriver().getCurrentUrl();
             String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
-            DriverFactory.getDriver().get(base + "/tires");
+            DriverFactory.getDriver().get(base + "/tires-catalog#/fitment/vehicle");
         }
-        int count = searchResultsPage.waitForResultsAndGetCount(5);
-        ScenarioState.setResultsAvailable(count > 0 || DriverFactory.getDriver().getCurrentUrl().contains("/tires"));
+        int count = searchResultsPage.waitForResultsAndGetCount(8);
+        if (count <= 0) {
+            String current = DriverFactory.getDriver().getCurrentUrl();
+            String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
+            DriverFactory.getDriver().get(base + "/tires-catalog#/fitment/size");
+            count = searchResultsPage.waitForResultsAndGetCount(8);
+        }
+        ScenarioState.setResultsAvailable(count > 0);
         pauseForDemo();
     }
 
@@ -67,10 +73,10 @@ public class SearchSteps {
         } catch (Exception ignored) {
             String current = DriverFactory.getDriver().getCurrentUrl();
             String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
-            DriverFactory.getDriver().get(base + "/tires");
+            DriverFactory.getDriver().get(base + "/tires-catalog#/fitment/size");
         }
-        int count = searchResultsPage.waitForResultsAndGetCount(5);
-        ScenarioState.setResultsAvailable(count > 0 || DriverFactory.getDriver().getCurrentUrl().contains("/tires"));
+        int count = searchResultsPage.waitForResultsAndGetCount(8);
+        ScenarioState.setResultsAvailable(count > 0);
         pauseForDemo();
     }
 

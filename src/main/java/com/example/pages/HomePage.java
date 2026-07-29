@@ -36,10 +36,19 @@ public class HomePage {
      */
     public void openHomePage(String url) {
         driver.get(url);
-        // wait for main navigation or search to be visible
-        WaitUtils.waitForVisibility(driver, By.cssSelector("input[type='search'], a[href*='/tires']"), 8);
+        WaitUtils.waitForDocumentReady(driver, 12);
+        WaitUtils.waitForAnyPresence(driver, 10,
+                By.tagName("body"),
+                By.tagName("main"),
+                By.tagName("header"),
+                By.cssSelector("[class*='header__wrapper'], [class*='site-logo']"));
+        dismissTopOverlays();
         handleLocationPopup();
         dismissTopOverlays();
+        WaitUtils.waitForAnyVisibility(driver, 8,
+                By.tagName("main"),
+                By.tagName("header"),
+                By.cssSelector("[class*='header__wrapper'], [class*='site-logo'], button, a, input, [role='button']"));
     }
 
     /**
@@ -101,6 +110,18 @@ public class HomePage {
             } catch (Exception ignored) {
                 // overlay may not exist on this run
             }
+        }
+
+        try {
+            ((JavascriptExecutor) driver).executeScript(
+                    "document.querySelectorAll('.ReactModalPortal, [class*=\"drawer__\"], [class*=\"store-locator-message__\"]').forEach(function(el) {" +
+                            "  var text = (el.innerText || '').toLowerCase();" +
+                            "  if (text.includes('tire rack') || text.includes('find store') || text.includes('nearest store')) {" +
+                            "    el.remove();" +
+                            "  }" +
+                            "});");
+        } catch (Exception ignored) {
+            // Best effort removal of blocking store drawers.
         }
     }
 

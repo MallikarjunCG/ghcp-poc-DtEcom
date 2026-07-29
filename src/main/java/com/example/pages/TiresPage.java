@@ -70,8 +70,12 @@ public class TiresPage {
     private void openFitmentFallback(String type) {
         String current = driver.getCurrentUrl();
         String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
-        driver.get(base + "/tires/best-low-cost#/fitment/" + type);
-        WaitUtils.waitForPresence(driver, By.cssSelector("select, [role='combobox'], [data-testid*='year'], [data-testid*='width']"), 4);
+        driver.get(base + "/tires-catalog#/fitment/" + type);
+        WaitUtils.waitForAnyPresence(driver, 8,
+                By.cssSelector("[id^='product-code-']"),
+                By.cssSelector("select, input[id*='react-select'], [role='combobox'], [data-testid*='year'], [data-testid*='width']"),
+                By.xpath("//button[contains(., 'Enter your vehicle') or contains(., 'Shop by Size') or contains(., 'Shop by Vehicle')]")
+        );
     }
 }
 

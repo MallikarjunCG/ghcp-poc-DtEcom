@@ -1,12 +1,15 @@
 package com.example.utils;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * WaitUtils contains reusable explicit wait helpers.
@@ -54,5 +57,57 @@ public class WaitUtils {
     public static WebElement waitForPresence(WebDriver driver, By locator, int timeoutSeconds) {
         WebDriverWait wait = buildWait(driver, timeoutSeconds);
         return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
+    }
+
+    public static void waitForDocumentReady(WebDriver driver, int timeoutSeconds) {
+        WebDriverWait wait = buildWait(driver, timeoutSeconds);
+        wait.until(d -> {
+            Object state = ((JavascriptExecutor) d).executeScript("return document.readyState");
+            if (state == null) {
+                return false;
+            }
+            String readyState = String.valueOf(state);
+            return "interactive".equalsIgnoreCase(readyState) || "complete".equalsIgnoreCase(readyState);
+        });
+    }
+
+    public static WebElement waitForAnyVisibility(WebDriver driver, int timeoutSeconds, By... locators) {
+        List<By> locatorList = Arrays.asList(locators);
+        WebDriverWait wait = buildWait(driver, timeoutSeconds);
+        return wait.until(d -> locatorList.stream()
+                .map(locator -> {
+                    try {
+                        List<WebElement> elements = d.findElements(locator);
+                        for (WebElement element : elements) {
+                            if (element != null && element.isDisplayed()) {
+                                return element;
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // Try next locator.
+                    }
+                    return null;
+                })
+                .filter(element -> element != null)
+                .findFirst()
+                .orElse(null));
+    }
+
+    public static WebElement waitForAnyPresence(WebDriver driver, int timeoutSeconds, By... locators) {
+        List<By> locatorList = Arrays.asList(locators);
+        WebDriverWait wait = buildWait(driver, timeoutSeconds);
+        return wait.until(d -> locatorList.stream()
+                .map(locator -> {
+                    try {
+                        List<WebElement> elements = d.findElements(locator);
+                        return elements.isEmpty() ? null : elements.get(0);
+                    } catch (Exception ignored) {
+                        // Try next locator.
+                    }
+                    return null;
+                })
+                .filter(element -> element != null)
+                .findFirst()
+                .orElse(null));
     }
 }

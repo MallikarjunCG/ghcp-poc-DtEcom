@@ -13,9 +13,10 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cucumber.version>7.14.0</cucumber.version>
-        <selenium.version>4.11.0</selenium.version>
+        <selenium.version>4.46.0</selenium.version>
         <webdrivermanager.version>5.4.1</webdrivermanager.version>
         <testng.version>7.8.0</testng.version>
+        <parallel.threads>2</parallel.threads>
     </properties>
 
     <dependencies>
@@ -80,6 +81,12 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
+                    <properties>
+                        <property>
+                            <name>dataproviderthreadcount</name>
+                            <value>${parallel.threads}</value>
+                        </property>
+                    </properties>
                 </configuration>
             </plugin>
         </plugins>

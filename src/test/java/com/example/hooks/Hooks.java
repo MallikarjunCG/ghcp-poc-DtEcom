@@ -1,6 +1,7 @@
 package com.example.hooks;
 
 import com.example.driver.DriverFactory;
+import com.example.pages.SearchResultsPage;
 import com.example.utils.ScreenshotUtil;
 import com.example.testutils.ScenarioState;
 import io.cucumber.java.After;
@@ -15,6 +16,7 @@ public class Hooks {
     @Before
     public void beforeScenario() {
         ScenarioState.reset();
+        SearchResultsPage.clearPreferredProductMatch();
         // Initialize driver before each scenario
         DriverFactory.initDriver();
     }
@@ -38,6 +40,7 @@ public class Hooks {
 
         // Quit driver after scenario
         DriverFactory.quitDriver();
+        SearchResultsPage.clearPreferredProductMatch();
     }
 
     private void pauseBeforeClosingBrowser() {

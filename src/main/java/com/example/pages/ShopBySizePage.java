@@ -3,6 +3,7 @@ package com.example.pages;
 import com.example.driver.DriverFactory;
 import com.example.utils.WaitUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -54,28 +55,97 @@ public class ShopBySizePage {
         } catch (Exception ignored) {}
     }
 
+    private boolean selectReactOption(String fieldLabel, String value) {
+        try {
+            WebElement container = WaitUtils.waitForPresence(driver, By.xpath(
+                    "//label[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + fieldLabel.toLowerCase() + "')]/ancestor::*[contains(@class,'input__default') or contains(@class,'fitment-select')][1]"), 6);
+            scrollIntoView(container);
+            WebElement input = container.findElement(By.cssSelector("input[role='combobox']"));
+            input.click();
+            input.sendKeys(Keys.chord(Keys.CONTROL, "a"), value);
+
+            WaitUtils.waitForAnyPresence(driver, 6,
+                    By.cssSelector("div[role='option']"),
+                    By.xpath("//*[contains(@class,'react-select__option')]")
+            );
+
+            for (WebElement option : driver.findElements(By.cssSelector("div[role='option'], [class*='react-select__option']"))) {
+                String text = option.getText();
+                if (text != null && text.trim().equalsIgnoreCase(value.trim()) && option.isDisplayed()) {
+                    option.click();
+                    return true;
+                }
+            }
+
+            input.sendKeys(Keys.ENTER);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private void scrollIntoView(WebElement element) {
+        try {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", element);
+        } catch (Exception ignored) {
+            // Best-effort only.
+        }
+    }
+
+    private void submitSearch() {
+        try {
+            WaitUtils.waitForClickability(driver, By.xpath(
+                    "//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'find') or contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'view results') or contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'shop tires') or @type='submit']"), 5).click();
+        } catch (Exception e) {
+            try {
+                if (searchButton != null) {
+                    searchButton.click();
+                    return;
+                }
+            } catch (Exception ignored) {
+                // Fall through to ENTER on the last field.
+            }
+            try {
+                if (diameterSelect != null) {
+                    diameterSelect.sendKeys(Keys.ENTER);
+                }
+            } catch (Exception ignored) {
+                // Some site variants auto-refresh results without a submit button.
+            }
+        }
+    }
+
     /**
      * Search tires by size and submit.
      */
     public void searchByTireSize(String width, String ratio, String diameter) {
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=width], select[name*=width], div[data-testid*='width']"), 3);
-        selectOption(widthSelect, width, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
+        WaitUtils.waitForAnyPresence(driver, 6,
+                By.cssSelector("select[id*=width], select[name*=width]"),
+                By.cssSelector("input[role='combobox']"));
 
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=ratio], select[name*=ratio], select[id*=aspect], select[name*=aspect], div[data-testid*='ratio']"), 3);
-        selectOption(ratioSelect, ratio, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
-
-        WaitUtils.waitForVisibility(driver, By.cssSelector("select[id*=diameter], select[name*=diameter], div[data-testid*='diameter']"), 3);
-        selectOption(diameterSelect, diameter, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
-
+        boolean nativeFlow = false;
         try {
-            WaitUtils.waitForClickability(driver, By.cssSelector("button[type='submit'], button[data-testid*='search']"), 3).click();
-        } catch (Exception e) {
-            try {
-                if (searchButton != null) searchButton.click();
-            } catch (Exception ex) {
-                // submit with ENTER on last select
-                if (diameterSelect != null) diameterSelect.sendKeys(Keys.ENTER);
+            nativeFlow = widthSelect != null && widthSelect.isDisplayed();
+        } catch (Exception ignored) {
+            nativeFlow = false;
+        }
+
+        if (nativeFlow) {
+            selectOption(widthSelect, width, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
+            selectOption(ratioSelect, ratio, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
+            selectOption(diameterSelect, diameter, By.cssSelector("ul[role='listbox'] li, div[role='option']"));
+        } else {
+            if (!selectReactOption("width", width)) {
+                throw new IllegalStateException("Could not select width '" + width + "'");
+            }
+            if (!selectReactOption("ratio", ratio)) {
+                throw new IllegalStateException("Could not select ratio '" + ratio + "'");
+            }
+            if (!selectReactOption("diameter", diameter)) {
+                throw new IllegalStateException("Could not select diameter '" + diameter + "'");
             }
         }
+
+        submitSearch();
     }
 }
