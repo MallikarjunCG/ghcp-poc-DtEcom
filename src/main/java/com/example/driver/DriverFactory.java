@@ -42,8 +42,14 @@ public class DriverFactory {
         boolean fastMode = Boolean.parseBoolean(System.getProperty("run.fast", "false"));
 
         Map<String, Object> prefs = new HashMap<>();
+        // Block all permission prompts (notifications, geolocation, camera, microphone …)
+        // Value 2 = Block, 1 = Allow, 0 = Ask
         prefs.put("profile.default_content_setting_values.notifications", 2);
         prefs.put("profile.default_content_setting_values.geolocation", 2);
+        prefs.put("profile.default_content_settings.geolocation", 2);
+        prefs.put("profile.managed_default_content_settings.geolocation", 2);
+        prefs.put("profile.default_content_setting_values.media_stream_camera", 2);
+        prefs.put("profile.default_content_setting_values.media_stream_mic", 2);
         if (fastMode) {
             // Optional speed-up for local smoke runs where image rendering is not required.
             prefs.put("profile.managed_default_content_settings.images", 2);
@@ -57,6 +63,11 @@ public class DriverFactory {
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--no-sandbox");
         options.addArguments("--window-size=1920,1080");
+        // Deny ALL browser-level permission prompts (location, notifications, camera …)
+        // so the "discounttire.com wants to know your location" info-bar never appears.
+        options.addArguments("--deny-permission-prompts");
+        options.addArguments("--disable-geolocation");
+        options.addArguments("--use-fake-ui-for-media-stream");
         if (fastMode) {
             options.addArguments("--disable-gpu");
             options.addArguments("--blink-settings=imagesEnabled=false");

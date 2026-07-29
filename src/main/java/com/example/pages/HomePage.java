@@ -56,11 +56,14 @@ public class HomePage {
      */
     public void navigateToTires() {
         dismissTopOverlays();
+        handleLocationPopup();
 
         if (tryClick(By.cssSelector("a[href='/tires'], a[href*='/tires'], a[data-testid*='tires']"), 4)) {
+            handleLocationPopup();
             return;
         }
         if (tryClick(By.xpath("//a[contains(translate(normalize-space(.), 'TIRES', 'tires'), 'tires')]"), 3)) {
+            handleLocationPopup();
             return;
         }
 
@@ -69,6 +72,7 @@ public class HomePage {
         String base = current.replaceFirst("^(https?://[^/]+).*$", "$1");
         driver.get(base + "/tires");
         WaitUtils.waitForVisibility(driver, By.cssSelector("a[href*='vehicle'], a[href*='size'], button, h1"), 8);
+        handleLocationPopup();
     }
 
     private boolean tryClick(By locator, int timeoutSeconds) {
@@ -114,14 +118,82 @@ public class HomePage {
 
         try {
             ((JavascriptExecutor) driver).executeScript(
-                    "document.querySelectorAll('.ReactModalPortal, [class*=\"drawer__\"], [class*=\"store-locator-message__\"]').forEach(function(el) {" +
-                            "  var text = (el.innerText || '').toLowerCase();" +
-                            "  if (text.includes('tire rack') || text.includes('find store') || text.includes('nearest store')) {" +
-                            "    el.remove();" +
-                            "  }" +
-                            "});");
+                // Remove store-locator / Tire Rack drawers
+                "document.querySelectorAll('.ReactModalPortal, [class*=\"drawer__\"], [class*=\"store-locator-message__\"]').forEach(function(el) {" +
+                "  var text = (el.innerText || '').toLowerCase();" +
+                "  if (text.includes('tire rack') || text.includes('find store') || text.includes('nearest store')) {" +
+                "    el.remove();" +
+                "  }" +
+                "});"
+            );
         } catch (Exception ignored) {
             // Best effort removal of blocking store drawers.
+        }
+
+        // Also sweep any remaining location-permission overlays.
+        dismissLocationModalViaJs();
+    }
+
+    /**
+     * Dismiss the "Know your location" / geolocation permission modal.
+     * Handles both button-based close interactions and JS-level DOM removal as a fallback.
+     */
+    public void handleLocationPopup() {
+        // 1. Fast JS sweep to remove any site-level location modal.
+        dismissLocationModalViaJs();
+
+        // 2. Walk button candidates from most-specific to least-specific.
+        By[] closeCandidates = new By[]{
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'never allow')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'not now')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'deny')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'block')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'no thanks')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'skip')]"),
+                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'close')]"),
+                By.cssSelector("button[aria-label*='close' i], button[class*='close' i], [data-testid*='close' i]"),
+                // Close button inside any modal that mentions 'location'
+                By.xpath("//*[contains(translate(normalize-space(.), 'LOCATION', 'location'), 'location')]" +
+                        "//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'close')" +
+                        " or contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'no')" +
+                        " or @aria-label]")
+        };
+
+        for (By locator : closeCandidates) {
+            if (tryDismiss(locator)) {
+                // Re-run the JS sweep in case the click revealed another layer.
+                dismissLocationModalViaJs();
+                return;
+            }
+        }
+    }
+
+    /**
+     * JavaScript-based removal of any overlay whose visible text contains
+     * location-permission keywords. Covers site modals without a consistent
+     * close-button selector.
+     */
+    private void dismissLocationModalViaJs() {
+        try {
+            ((JavascriptExecutor) driver).executeScript(
+                "var keywords = ['know your location', 'share your location', 'use your location'," +
+                "  'find store', 'nearest store', 'your location', 'enable location', 'allow location'];" +
+                "var roots = document.querySelectorAll(" +
+                "  '[role=\"dialog\"],[role=\"alertdialog\"],.ReactModalPortal," +
+                "  [class*=\"modal\"],[class*=\"drawer\"],[class*=\"overlay\"]," +
+                "  [class*=\"popup\"],[class*=\"store-locator\"],[class*=\"location\"]');" +
+                "roots.forEach(function(el) {" +
+                "  var text = (el.innerText || '').toLowerCase();" +
+                "  if (keywords.some(function(k){ return text.includes(k); })) {" +
+                "    var btn = el.querySelector(" +
+                "      'button[aria-label*=\"close\" i],button[class*=\"close\" i]," +
+                "       button[aria-label*=\"deny\" i],button[aria-label*=\"block\" i]');" +
+                "    if (btn) { try { btn.click(); } catch(e){} } else { el.remove(); }" +
+                "  }" +
+                "});"
+            );
+        } catch (Exception ignored) {
+            // Best-effort: the page may not have any such overlay.
         }
     }
 
@@ -141,22 +213,6 @@ public class HomePage {
         }
     }
 
-    public void handleLocationPopup() {
-        By[] closeCandidates = new By[] {
-                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'never allow')]"),
-                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'not now')]"),
-                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'deny')]"),
-                By.xpath("//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'close')]"),
-                By.cssSelector("button[aria-label*='close' i], button[class*='close' i], [data-testid*='close' i]")
-        };
-
-        // Fast best-effort popup cleanup: avoid long waits when no modal is present.
-        for (By locator : closeCandidates) {
-            if (tryDismiss(locator)) {
-                return;
-            }
-        }
-    }
 
     private boolean tryDismiss(By locator) {
         try {
