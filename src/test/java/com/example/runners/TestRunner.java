@@ -11,9 +11,8 @@ import org.testng.annotations.DataProvider;
         publish = false
 )
 public class TestRunner extends AbstractTestNGCucumberTests {
-    // Run scenarios sequentially to keep live-site UI interactions stable.
     @Override
-    @DataProvider(parallel = false)
+    @DataProvider(parallel = true)
     public Object[][] scenarios() {
         return super.scenarios();
     }

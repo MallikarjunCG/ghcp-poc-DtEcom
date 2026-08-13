@@ -65,6 +65,23 @@ public class SearchResultsPage {
 
         dismissStoreOverlayIfPresent();
         PREFERRED_PRODUCT_MATCH.set(null);
+
+        if (tryApplyBrandFilter(brandName, brandLower)) {
+            return;
+        }
+
+        // One retry after re-opening filter UI to reduce transient live-site misses.
+        dismissStoreOverlayIfPresent();
+        openFiltersPanelIfPresent();
+        waitBriefly(600L);
+        if (tryApplyBrandFilter(brandName, brandLower)) {
+            return;
+        }
+
+        throw new AssertionError("Brand filter containing '" + brandName + "' was not found or could not be applied. " + buildFilterDebugSummary());
+    }
+
+    private boolean tryApplyBrandFilter(String brandName, String brandLower) {
         ensureFacetContentLoaded("brand");
         expandFacetIfPresent("brand");
 
@@ -72,19 +89,18 @@ public class SearchResultsPage {
         brandFacet.ifPresent(this::scrollIntoView);
         brandFacet.ifPresent(facet -> typeIntoFacetSearch(facet, brandName));
 
-        // Find label elements and match by text then click the associated checkbox/input
         List<WebElement> labels = brandFacet
                 .map(facet -> facet.findElements(By.cssSelector("label")))
                 .filter(found -> !found.isEmpty())
                 .orElseGet(() -> driver.findElements(By.cssSelector("label")));
         Optional<WebElement> label = labels.stream()
-                .filter(l -> l.getText() != null && l.getText().toLowerCase().contains(brandLower))
+                .filter(l -> normalize(l.getText()).contains(brandLower))
                 .findFirst();
         if (label.isPresent()) {
             applyBrandElement(label.get());
             waitForResultsRefresh();
             PREFERRED_PRODUCT_MATCH.set(brandLower);
-            return;
+            return true;
         }
 
         List<WebElement> controls = brandFacet
@@ -96,7 +112,7 @@ public class SearchResultsPage {
                 applyBrandElement(control);
                 waitForResultsRefresh();
                 PREFERRED_PRODUCT_MATCH.set(brandLower);
-                return;
+                return true;
             }
         }
 
@@ -111,17 +127,17 @@ public class SearchResultsPage {
                 applyBrandElement(candidate);
                 waitForResultsRefresh();
                 PREFERRED_PRODUCT_MATCH.set(brandLower);
-                return;
+                return true;
             }
         }
 
         Optional<WebElement> brandProductLink = findMatchingProductLink(brandLower);
         if (brandProductLink.isPresent()) {
             PREFERRED_PRODUCT_MATCH.set(brandLower);
-            return;
+            return true;
         }
 
-        throw new AssertionError("Brand filter containing '" + brandName + "' was not found or could not be applied. " + buildFilterDebugSummary());
+        return false;
     }
 
     public static void clearPreferredProductMatch() {
@@ -268,12 +284,16 @@ public class SearchResultsPage {
     }
 
     private void ensureFacetContentLoaded(String facetName) {
+        openFiltersPanelIfPresent();
         for (int attempt = 0; attempt < 8; attempt++) {
             if (findFacetContainer(facetName).isPresent()) {
                 return;
             }
+            if (attempt == 2 || attempt == 5) {
+                openFiltersPanelIfPresent();
+            }
             try {
-                List<WebElement> filters = driver.findElements(By.cssSelector("#product-list-filter"));
+                List<WebElement> filters = driver.findElements(By.cssSelector("#product-list-filter, [data-testid*='filter'], [class*='filter-panel'], [class*='drawer']"));
                 if (!filters.isEmpty()) {
                     WebElement filter = filters.get(0);
                     scrollIntoView(filter);
@@ -294,8 +314,34 @@ public class SearchResultsPage {
             return Optional.empty();
         }
         List<WebElement> candidates = driver.findElements(By.xpath(
-                "//*[contains(@class,'collapsible') or contains(@class,'option-category') or contains(@class,'filter')][.//*[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + facetLower + "')]]"));
+                "//*[contains(@class,'collapsible') or contains(@class,'option-category') or contains(@class,'filter') or contains(@data-testid,'filter') or contains(@id,'filter')][.//*[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + facetLower + "')]]"));
         return candidates.stream().filter(this::isDisplayedSafely).findFirst();
+    }
+
+    private void openFiltersPanelIfPresent() {
+        String[] triggers = {"filter", "filters", "refine", "shop by"};
+        for (String trigger : triggers) {
+            List<WebElement> toggles = driver.findElements(By.xpath(
+                    "//*[self::button or self::a or self::summary or @role='button'][contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + trigger + "')]"));
+            for (WebElement toggle : toggles) {
+                try {
+                    if (!toggle.isDisplayed()) {
+                        continue;
+                    }
+                    String expanded = normalize(safeAttribute(toggle, "aria-expanded"));
+                    if ("true".equals(expanded)) {
+                        return;
+                    }
+                    safeClick(toggle);
+                    waitBriefly(300L);
+                    if (findFacetContainer("brand").isPresent()) {
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Try next possible panel trigger.
+                }
+            }
+        }
     }
 
     private void typeIntoFacetSearch(WebElement facet, String searchText) {

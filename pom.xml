@@ -16,8 +16,23 @@
         <selenium.version>4.46.0</selenium.version>
         <webdrivermanager.version>5.4.1</webdrivermanager.version>
         <testng.version>7.8.0</testng.version>
-        <parallel.threads>2</parallel.threads>
+        <parallel.threads>4</parallel.threads>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>parallel</id>
+            <properties>
+                <parallel.threads>4</parallel.threads>
+            </properties>
+        </profile>
+        <profile>
+            <id>sequential</id>
+            <properties>
+                <parallel.threads>1</parallel.threads>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencies>
         <!-- Selenium -->
